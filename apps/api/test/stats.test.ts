@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { UpdateApplicationInput } from "../src/schemas.js";
 import { computeStats, startOfWeekUTC, withAppliedAt } from "../src/stats.js";
 
 const NOW = new Date("2026-11-11T15:00:00Z"); // a Wednesday
@@ -80,6 +81,7 @@ describe("withAppliedAt", () => {
 
   it("leaves wishlist items and edits without a status alone", () => {
     expect(withAppliedAt({ status: "WISHLIST" as const }, null, NOW)).toEqual({ status: "WISHLIST" });
-    expect(withAppliedAt({ notes: "Call back" }, null, NOW)).toEqual({ notes: "Call back" });
+    const edit: UpdateApplicationInput = { notes: "Call back" };
+    expect(withAppliedAt(edit, null, NOW)).toEqual({ notes: "Call back" });
   });
 });

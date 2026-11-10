@@ -1,40 +1,42 @@
-import { Prisma, type PrismaClient } from "../generated/prisma/client.js";
+import type { PrismaClient } from "../generated/prisma/client.js";
 import type { ApplicationRepository } from "./application-repository.js";
 
-const isNotFound = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+const select = {
+  id: true,
+  company: true,
+  role: true,
+  url: true,
+  location: true,
+  status: true,
+  notes: true,
+  appliedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 export class PrismaApplicationRepository implements ApplicationRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  list: ApplicationRepository["list"] = (filter = {}) =>
+  list: ApplicationRepository["list"] = (userId, filter = {}) =>
     this.prisma.application.findMany({
-      where: { status: filter.status },
+      where: { userId, status: filter.status },
       orderBy: { updatedAt: "desc" },
+      select,
     });
 
-  findById: ApplicationRepository["findById"] = (id) =>
-    this.prisma.application.findUnique({ where: { id } });
+  findById: ApplicationRepository["findById"] = (userId, id) =>
+    this.prisma.application.findFirst({ where: { id, userId }, select });
 
-  create: ApplicationRepository["create"] = (input) =>
-    this.prisma.application.create({ data: input });
+  create: ApplicationRepository["create"] = (userId, input) =>
+    this.prisma.application.create({ data: { ...input, userId }, select });
 
-  update: ApplicationRepository["update"] = async (id, input) => {
-    try {
-      return await this.prisma.application.update({ where: { id }, data: input });
-    } catch (error) {
-      if (isNotFound(error)) return null;
-      throw error;
-    }
+  update: ApplicationRepository["update"] = async (userId, id, input) => {
+    const { count } = await this.prisma.application.updateMany({ where: { id, userId }, data: input });
+    return count === 0 ? null : this.findById(userId, id);
   };
 
-  delete: ApplicationRepository["delete"] = async (id) => {
-    try {
-      await this.prisma.application.delete({ where: { id } });
-      return true;
-    } catch (error) {
-      if (isNotFound(error)) return false;
-      throw error;
-    }
+  delete: ApplicationRepository["delete"] = async (userId, id) => {
+    const { count } = await this.prisma.application.deleteMany({ where: { id, userId } });
+    return count > 0;
   };
 }

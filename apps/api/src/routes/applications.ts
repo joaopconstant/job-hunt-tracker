@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
+import type { Authenticator } from "../authenticator.js";
 import type { ApplicationRepository } from "../repositories/application-repository.js";
 import {
   applicationSchema,
@@ -9,22 +10,35 @@ import {
   updateApplicationSchema,
 } from "../schemas.js";
 
-const notFound = z.object({ message: z.string() });
+const errorSchema = z.object({ message: z.string() });
 
-export const applicationRoutes: FastifyPluginAsyncZod<{ repository: ApplicationRepository }> = async (
-  app,
-  { repository },
-) => {
+declare module "fastify" {
+  interface FastifyRequest {
+    userId: string;
+  }
+}
+
+export const applicationRoutes: FastifyPluginAsyncZod<{
+  repository: ApplicationRepository;
+  authenticator: Authenticator;
+}> = async (app, { repository, authenticator }) => {
+  app.decorateRequest("userId", "");
+  app.addHook("onRequest", async (request, reply) => {
+    const userId = await authenticator.getUserId(request.headers);
+    if (!userId) return reply.status(401).send({ message: "Unauthorized" });
+    request.userId = userId;
+  });
+
   app.get(
     "/applications",
     {
       schema: {
         tags: ["applications"],
         querystring: listApplicationsQuery,
-        response: { 200: z.array(applicationSchema) },
+        response: { 200: z.array(applicationSchema), 401: errorSchema },
       },
     },
-    async (request) => repository.list(request.query),
+    async (request) => repository.list(request.userId, request.query),
   );
 
   app.get(
@@ -33,11 +47,11 @@ export const applicationRoutes: FastifyPluginAsyncZod<{ repository: ApplicationR
       schema: {
         tags: ["applications"],
         params: idParams,
-        response: { 200: applicationSchema, 404: notFound },
+        response: { 200: applicationSchema, 401: errorSchema, 404: errorSchema },
       },
     },
     async (request, reply) => {
-      const application = await repository.findById(request.params.id);
+      const application = await repository.findById(request.userId, request.params.id);
       if (!application) return reply.status(404).send({ message: "Application not found" });
       return application;
     },
@@ -49,10 +63,10 @@ export const applicationRoutes: FastifyPluginAsyncZod<{ repository: ApplicationR
       schema: {
         tags: ["applications"],
         body: createApplicationSchema,
-        response: { 201: applicationSchema },
+        response: { 201: applicationSchema, 401: errorSchema },
       },
     },
-    async (request, reply) => reply.status(201).send(await repository.create(request.body)),
+    async (request, reply) => reply.status(201).send(await repository.create(request.userId, request.body)),
   );
 
   app.patch(
@@ -62,11 +76,11 @@ export const applicationRoutes: FastifyPluginAsyncZod<{ repository: ApplicationR
         tags: ["applications"],
         params: idParams,
         body: updateApplicationSchema,
-        response: { 200: applicationSchema, 404: notFound },
+        response: { 200: applicationSchema, 401: errorSchema, 404: errorSchema },
       },
     },
     async (request, reply) => {
-      const application = await repository.update(request.params.id, request.body);
+      const application = await repository.update(request.userId, request.params.id, request.body);
       if (!application) return reply.status(404).send({ message: "Application not found" });
       return application;
     },
@@ -78,11 +92,11 @@ export const applicationRoutes: FastifyPluginAsyncZod<{ repository: ApplicationR
       schema: {
         tags: ["applications"],
         params: idParams,
-        response: { 204: z.null(), 404: notFound },
+        response: { 204: z.null(), 401: errorSchema, 404: errorSchema },
       },
     },
     async (request, reply) => {
-      const deleted = await repository.delete(request.params.id);
+      const deleted = await repository.delete(request.userId, request.params.id);
       if (!deleted) return reply.status(404).send({ message: "Application not found" });
       return reply.status(204).send(null);
     },

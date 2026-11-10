@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { signUp } from "./helpers";
 
 // Runs against the full stack (web + api + db), e.g. `docker compose up`.
 test("adds an application and moves it through the pipeline", async ({ page }) => {
   const company = `Acme ${Date.now()}`;
 
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Job Hunt Tracker" })).toBeVisible();
+  await signUp(page);
 
   await page.getByLabel("Company").fill(company);
   await page.getByLabel("Role").fill("Full Stack Developer");

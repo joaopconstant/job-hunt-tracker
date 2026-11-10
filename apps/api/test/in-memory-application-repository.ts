@@ -2,19 +2,36 @@ import { randomUUID } from "node:crypto";
 import type { ApplicationRepository } from "../src/repositories/application-repository.js";
 import type { Application } from "../src/schemas.js";
 
+type StoredApplication = Application & { userId: string };
+
 export class InMemoryApplicationRepository implements ApplicationRepository {
-  items: Application[] = [];
+  items: StoredApplication[] = [];
 
-  list: ApplicationRepository["list"] = async (filter = {}) =>
-    this.items.filter((item) => !filter.status || item.status === filter.status);
+  private find(userId: string, id: string) {
+    return this.items.find((item) => item.id === id && item.userId === userId);
+  }
 
-  findById: ApplicationRepository["findById"] = async (id) =>
-    this.items.find((item) => item.id === id) ?? null;
+  private static toApplication(item: StoredApplication): Application {
+    const application: Partial<StoredApplication> = { ...item };
+    delete application.userId;
+    return application as Application;
+  }
 
-  create: ApplicationRepository["create"] = async (input) => {
+  list: ApplicationRepository["list"] = async (userId, filter = {}) =>
+    this.items
+      .filter((item) => item.userId === userId && (!filter.status || item.status === filter.status))
+      .map(InMemoryApplicationRepository.toApplication);
+
+  findById: ApplicationRepository["findById"] = async (userId, id) => {
+    const item = this.find(userId, id);
+    return item ? InMemoryApplicationRepository.toApplication(item) : null;
+  };
+
+  create: ApplicationRepository["create"] = async (userId, input) => {
     const now = new Date();
-    const application: Application = {
+    const item: StoredApplication = {
       id: randomUUID(),
+      userId,
       company: input.company,
       role: input.role,
       url: input.url ?? null,
@@ -25,21 +42,22 @@ export class InMemoryApplicationRepository implements ApplicationRepository {
       createdAt: now,
       updatedAt: now,
     };
-    this.items.push(application);
-    return application;
+    this.items.push(item);
+    return InMemoryApplicationRepository.toApplication(item);
   };
 
-  update: ApplicationRepository["update"] = async (id, input) => {
-    const application = await this.findById(id);
-    if (!application) return null;
+  update: ApplicationRepository["update"] = async (userId, id, input) => {
+    const item = this.find(userId, id);
+    if (!item) return null;
     const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
-    Object.assign(application, defined, { updatedAt: new Date() });
-    return application;
+    Object.assign(item, defined, { updatedAt: new Date() });
+    return InMemoryApplicationRepository.toApplication(item);
   };
 
-  delete: ApplicationRepository["delete"] = async (id) => {
-    const before = this.items.length;
-    this.items = this.items.filter((item) => item.id !== id);
-    return this.items.length < before;
+  delete: ApplicationRepository["delete"] = async (userId, id) => {
+    const item = this.find(userId, id);
+    if (!item) return false;
+    this.items = this.items.filter((other) => other !== item);
+    return true;
   };
 }

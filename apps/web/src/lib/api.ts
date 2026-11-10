@@ -1,13 +1,19 @@
 import "server-only";
+import { redirect } from "next/navigation";
 import type { Application, ApplicationStatus } from "./applications";
-
-const API_URL = process.env.API_URL ?? "http://localhost:3333";
+import { API_URL } from "./config";
+import { sessionCookieHeader } from "./session";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
+    headers: {
+      "content-type": "application/json",
+      cookie: await sessionCookieHeader(),
+      ...init?.headers,
+    },
   });
+  if (response.status === 401) redirect("/sign-in");
   if (!response.ok) {
     throw new Error(`API ${init?.method ?? "GET"} ${path} failed with ${response.status}`);
   }

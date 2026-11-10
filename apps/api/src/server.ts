@@ -1,13 +1,23 @@
 import { buildApp } from "./app.js";
+import { createAuth } from "./auth.js";
+import { betterAuthAuthenticator } from "./authenticator.js";
 import { createPrismaClient } from "./db.js";
 import { PrismaApplicationRepository } from "./repositories/prisma-application-repository.js";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("DATABASE_URL is not set");
+function requireEnv(name: string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is not set`);
+  return value;
+}
 
-const prisma = createPrismaClient(databaseUrl);
+const prisma = createPrismaClient(requireEnv("DATABASE_URL"));
+const auth = createAuth(prisma, {
+  secret: requireEnv("BETTER_AUTH_SECRET"),
+  baseURL: requireEnv("BETTER_AUTH_URL"),
+});
 const app = await buildApp({
   repository: new PrismaApplicationRepository(prisma),
+  authenticator: betterAuthAuthenticator(auth),
   corsOrigin: process.env.CORS_ORIGIN,
   logger: true,
 });

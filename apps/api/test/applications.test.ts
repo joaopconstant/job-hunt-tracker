@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
+import { fakeAuthenticator } from "./fake-authenticator.js";
 import { InMemoryApplicationRepository } from "./in-memory-application-repository.js";
 
 let repository: InMemoryApplicationRepository;
@@ -7,13 +8,21 @@ let app: Awaited<ReturnType<typeof buildApp>>;
 
 beforeEach(async () => {
   repository = new InMemoryApplicationRepository();
-  app = await buildApp({ repository });
+  app = await buildApp({ repository, authenticator: fakeAuthenticator });
 });
 
-const createApplication = (body: Record<string, unknown>) =>
-  app.inject({ method: "POST", url: "/applications", payload: body });
+const as = (userId: string) => ({ "x-test-user": userId });
+
+const createApplication = (body: Record<string, unknown>, userId = "alice") =>
+  app.inject({ method: "POST", url: "/applications", payload: body, headers: as(userId) });
 
 describe("applications", () => {
+  it("rejects requests without a signed-in user", async () => {
+    const response = await app.inject({ method: "GET", url: "/applications" });
+
+    expect(response.statusCode).toBe(401);
+  });
+
   it("creates an application with WISHLIST as the default status", async () => {
     const response = await createApplication({ company: "Acme", role: "Full Stack Developer" });
 
@@ -43,7 +52,7 @@ describe("applications", () => {
     await createApplication({ company: "Acme", role: "Dev", status: "APPLIED" });
     await createApplication({ company: "Globex", role: "Dev", status: "INTERVIEW" });
 
-    const response = await app.inject({ method: "GET", url: "/applications?status=INTERVIEW" });
+    const response = await app.inject({ method: "GET", url: "/applications?status=INTERVIEW", headers: as("alice") });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().map((a: { company: string }) => a.company)).toEqual(["Globex"]);
@@ -56,6 +65,7 @@ describe("applications", () => {
       method: "PATCH",
       url: `/applications/${id}`,
       payload: { status: "INTERVIEW" },
+      headers: as("alice"),
     });
 
     expect(response.statusCode).toBe(200);
@@ -65,7 +75,7 @@ describe("applications", () => {
   it("deletes an application", async () => {
     const { id } = (await createApplication({ company: "Acme", role: "Dev" })).json();
 
-    const response = await app.inject({ method: "DELETE", url: `/applications/${id}` });
+    const response = await app.inject({ method: "DELETE", url: `/applications/${id}`, headers: as("alice") });
 
     expect(response.statusCode).toBe(204);
     expect(repository.items).toHaveLength(0);
@@ -76,8 +86,26 @@ describe("applications", () => {
     ["PATCH", { status: "OFFER" }],
     ["DELETE", undefined],
   ] as const)("returns 404 on %s for an unknown id", async (method, payload) => {
-    const response = await app.inject({ method, url: "/applications/missing", payload });
+    const response = await app.inject({ method, url: "/applications/missing", payload, headers: as("alice") });
 
     expect(response.statusCode).toBe(404);
+  });
+
+  it("hides one user's applications from another", async () => {
+    const { id } = (await createApplication({ company: "Acme", role: "Dev" }, "alice")).json();
+
+    const list = await app.inject({ method: "GET", url: "/applications", headers: as("bob") });
+    const update = await app.inject({
+      method: "PATCH",
+      url: `/applications/${id}`,
+      payload: { status: "OFFER" },
+      headers: as("bob"),
+    });
+    const remove = await app.inject({ method: "DELETE", url: `/applications/${id}`, headers: as("bob") });
+
+    expect(list.json()).toEqual([]);
+    expect(update.statusCode).toBe(404);
+    expect(remove.statusCode).toBe(404);
+    expect(repository.items[0]).toMatchObject({ status: "WISHLIST" });
   });
 });

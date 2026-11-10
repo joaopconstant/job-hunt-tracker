@@ -10,6 +10,7 @@ Built as a production-style full stack project: typed end to end, containerized,
 | --- | --- |
 | Web | Next.js 16 (App Router, Server Actions, Cache Components), React 19, Tailwind CSS 4, shadcn/ui |
 | API | Node.js 22, Fastify 5, Zod 4 (validation + OpenAPI docs) |
+| Auth | Better Auth (email and password, database sessions) |
 | Data | PostgreSQL 17, Prisma 7 |
 | Tests | Vitest, Testing Library, Playwright |
 | Infra | Docker, Docker Compose, GitHub Actions, GitHub Container Registry |
@@ -24,6 +25,10 @@ apps/
 ```
 
 API docs (Swagger UI) are served at `http://localhost:3333/docs`.
+
+### Authentication
+
+Better Auth runs inside the API and stores users and sessions in Postgres through Prisma. The browser never calls the API directly: the web app proxies `/api/auth/*` to it, so the session cookie is first-party on the web origin. Server Components forward that cookie when they call the API, and every `/applications` route resolves the user from it and only reads or changes that user's data.
 
 ## Running locally
 
@@ -61,7 +66,7 @@ Every pull request runs lint, typecheck and unit tests, the integration tests ag
 - [x] Applications CRUD and Kanban board
 - [x] Docker, tests and CI
 - [x] UI with shadcn/ui
-- [ ] Authentication
+- [x] Authentication (email and password)
 - [ ] Dashboard with job hunt metrics
 - [ ] AI: parse a job posting and match it against your résumé
 - [ ] Deploy to AWS

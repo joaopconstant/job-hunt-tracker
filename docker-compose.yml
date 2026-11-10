@@ -25,6 +25,8 @@ services:
       # Local development only. Use a real secret (openssl rand -base64 32) anywhere else.
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev-secret-change-me-dev-secret-change-me}
       BETTER_AUTH_URL: http://localhost:3000
+      # "off" disables sign-in/sign-up rate limiting (the e2e suite signs up many users from one IP).
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-on}
     ports:
       - "3333:3333"
     depends_on:

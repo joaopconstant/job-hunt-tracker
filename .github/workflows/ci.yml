@@ -68,6 +68,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Start the stack
         run: docker compose up --build --detach --wait
+        env:
+          AUTH_RATE_LIMIT: "off"
       - run: pnpm --filter web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - name: Show container logs

@@ -84,6 +84,20 @@ describe("authentication (Better Auth + Prisma)", () => {
     expect(response.statusCode).toBe(401);
   });
 
+  it("signs out with an empty JSON body, as the browser client sends it", async () => {
+    const { cookie } = await signUp("alice@example.com");
+
+    const signOut = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-out",
+      headers: { origin, cookie, "content-type": "application/json" },
+    });
+    const list = await app.inject({ method: "GET", url: "/applications", headers: { cookie } });
+
+    expect(signOut.statusCode).toBe(200);
+    expect(list.statusCode).toBe(401);
+  });
+
   it("rejects requests with an invalid session cookie", async () => {
     const response = await app.inject({
       method: "GET",

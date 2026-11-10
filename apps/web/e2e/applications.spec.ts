@@ -27,4 +27,6 @@ test("adds an application and moves it through the pipeline", async ({ page }) =
     .getByRole("button", { name: "Delete" })
     .click();
   await expect(page.getByRole("article", { name: `Full Stack Developer at ${company}` })).toHaveCount(0);
+  // The board is still there (a failed action would replace it with the error page).
+  await expect(interview.getByLabel("0 applications")).toBeVisible();
 });

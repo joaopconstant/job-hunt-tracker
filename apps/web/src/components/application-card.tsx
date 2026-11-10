@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { deleteApplication, moveApplication } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,11 @@ export function ApplicationCard({ application }: { application: Application }) {
   return (
     <Card size="sm" role="article" aria-label={`${application.role} at ${application.company}`}>
       <CardHeader>
-        <CardTitle>{application.company}</CardTitle>
+        <CardTitle>
+          <Link href={`/applications/${application.id}`} className="hover:underline underline-offset-4">
+            {application.company}
+          </Link>
+        </CardTitle>
         <CardDescription>{application.role}</CardDescription>
         <CardAction>
           <form action={deleteApplication}>
@@ -30,6 +35,12 @@ export function ApplicationCard({ application }: { application: Application }) {
             )}
           </div>
         )}
+        <Link
+          href={`/applications/${application.id}`}
+          className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Compare with résumé
+        </Link>
         <form action={moveApplication} className="flex items-center gap-2">
           <input type="hidden" name="id" value={application.id} />
           <NativeSelect name="status" size="sm" defaultValue={application.status} aria-label="Status">

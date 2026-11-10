@@ -28,7 +28,8 @@ describe("Board", () => {
     render(<Board applications={applications} />);
 
     const interview = screen.getByRole("region", { name: /interview/i });
-    expect(within(interview).getByRole("heading", { name: /interview \(1\)/i })).toBeInTheDocument();
+    expect(within(interview).getByRole("heading", { name: /interview/i })).toBeInTheDocument();
+    expect(within(interview).getByLabelText("1 applications")).toBeInTheDocument();
     expect(within(interview).getByRole("article", { name: "Full Stack Developer at Acme" })).toBeInTheDocument();
 
     const wishlist = screen.getByRole("region", { name: /wishlist/i });

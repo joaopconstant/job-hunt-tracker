@@ -8,7 +8,7 @@ Built as a production-style full stack project: typed end to end, containerized,
 
 | Layer | Tech |
 | --- | --- |
-| Web | Next.js 16 (App Router, Server Actions, Cache Components), React 19, Tailwind CSS 4 |
+| Web | Next.js 16 (App Router, Server Actions, Cache Components), React 19, Tailwind CSS 4, shadcn/ui |
 | API | Node.js 22, Fastify 5, Zod 4 (validation + OpenAPI docs) |
 | Data | PostgreSQL 17, Prisma 7 |
 | Tests | Vitest, Testing Library, Playwright |
@@ -60,7 +60,7 @@ Every pull request runs lint, typecheck and unit tests, the integration tests ag
 
 - [x] Applications CRUD and Kanban board
 - [x] Docker, tests and CI
-- [ ] UI with shadcn/ui
+- [x] UI with shadcn/ui
 - [ ] Authentication
 - [ ] Dashboard with job hunt metrics
 - [ ] AI: parse a job posting and match it against your résumé

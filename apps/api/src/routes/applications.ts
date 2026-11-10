@@ -9,6 +9,7 @@ import {
   listApplicationsQuery,
   updateApplicationSchema,
 } from "../schemas.js";
+import { computeStats, statsSchema, withAppliedAt } from "../stats.js";
 
 const errorSchema = z.object({ message: z.string() });
 
@@ -42,6 +43,12 @@ export const applicationRoutes: FastifyPluginAsyncZod<{
   );
 
   app.get(
+    "/applications/stats",
+    { schema: { tags: ["applications"], response: { 200: statsSchema, 401: errorSchema } } },
+    async (request) => computeStats(await repository.list(request.userId), new Date()),
+  );
+
+  app.get(
     "/applications/:id",
     {
       schema: {
@@ -66,7 +73,10 @@ export const applicationRoutes: FastifyPluginAsyncZod<{
         response: { 201: applicationSchema, 401: errorSchema },
       },
     },
-    async (request, reply) => reply.status(201).send(await repository.create(request.userId, request.body)),
+    async (request, reply) => {
+      const input = withAppliedAt(request.body, null, new Date());
+      return reply.status(201).send(await repository.create(request.userId, input));
+    },
   );
 
   app.patch(
@@ -80,7 +90,10 @@ export const applicationRoutes: FastifyPluginAsyncZod<{
       },
     },
     async (request, reply) => {
-      const application = await repository.update(request.userId, request.params.id, request.body);
+      const current = await repository.findById(request.userId, request.params.id);
+      if (!current) return reply.status(404).send({ message: "Application not found" });
+      const input = withAppliedAt(request.body, current, new Date());
+      const application = await repository.update(request.userId, request.params.id, input);
       if (!application) return reply.status(404).send({ message: "Application not found" });
       return application;
     },

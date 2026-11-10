@@ -91,6 +91,32 @@ describe("applications", () => {
     expect(response.statusCode).toBe(404);
   });
 
+  it("records when an application is sent", async () => {
+    const { id, appliedAt } = (await createApplication({ company: "Acme", role: "Dev" })).json();
+    expect(appliedAt).toBeNull();
+
+    const moved = await app.inject({
+      method: "PATCH",
+      url: `/applications/${id}`,
+      payload: { status: "APPLIED" },
+      headers: as("alice"),
+    });
+
+    expect(new Date(moved.json().appliedAt).getTime()).toBeCloseTo(Date.now(), -4);
+  });
+
+  it("returns stats for the signed-in user only", async () => {
+    await createApplication({ company: "Acme", role: "Dev", status: "APPLIED" });
+    await createApplication({ company: "Globex", role: "Dev", status: "OFFER" });
+    await createApplication({ company: "Initech", role: "Dev" }, "bob");
+
+    const response = await app.inject({ method: "GET", url: "/applications/stats", headers: as("alice") });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ total: 2, submitted: 2, offerRate: 0.5 });
+    expect(response.json().weekly.at(-1).count).toBe(2);
+  });
+
   it("hides one user's applications from another", async () => {
     const { id } = (await createApplication({ company: "Acme", role: "Dev" }, "alice")).json();
 

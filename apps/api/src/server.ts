@@ -14,6 +14,7 @@ const prisma = createPrismaClient(requireEnv("DATABASE_URL"));
 const auth = createAuth(prisma, {
   secret: requireEnv("BETTER_AUTH_SECRET"),
   baseURL: requireEnv("BETTER_AUTH_URL"),
+  disableRateLimit: process.env.AUTH_RATE_LIMIT === "off",
 });
 const app = await buildApp({
   repository: new PrismaApplicationRepository(prisma),

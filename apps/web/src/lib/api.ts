@@ -2,14 +2,16 @@ import "server-only";
 import { redirect } from "next/navigation";
 import type { Application, ApplicationStatus } from "./applications";
 import { API_URL } from "./config";
-import { sessionCookieHeader } from "./session";
+import { forwardedHeaders } from "./session";
+import type { Stats } from "./stats";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      "content-type": "application/json",
-      cookie: await sessionCookieHeader(),
+      // Only when there is a body: Fastify rejects an empty body declared as JSON.
+      ...(init?.body !== undefined && { "content-type": "application/json" }),
+      ...(await forwardedHeaders()),
       ...init?.headers,
     },
   });
@@ -22,6 +24,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   listApplications: () => request<Application[]>("/applications"),
+  getStats: () => request<Stats>("/applications/stats"),
   createApplication: (input: { company: string; role: string; url?: string; location?: string }) =>
     request<Application>("/applications", { method: "POST", body: JSON.stringify(input) }),
   updateStatus: (id: string, status: ApplicationStatus) =>

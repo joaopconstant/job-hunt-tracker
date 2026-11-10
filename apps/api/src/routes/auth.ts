@@ -3,6 +3,11 @@ import type { Authenticator } from "../authenticator.js";
 
 /** Bridges Fastify to the Fetch-based Better Auth handler. */
 export const authRoutes: FastifyPluginAsync<{ authenticator: Authenticator }> = async (app, { authenticator }) => {
+  // Pass bodies through untouched: Better Auth parses them itself, and some of its
+  // requests (sign-out) send `content-type: application/json` with an empty body.
+  app.removeAllContentTypeParsers();
+  app.addContentTypeParser("*", { parseAs: "string" }, (_request, body, done) => done(null, body));
+
   app.route({
     method: ["GET", "POST"],
     url: "/api/auth/*",
@@ -17,7 +22,7 @@ export const authRoutes: FastifyPluginAsync<{ authenticator: Authenticator }> = 
         new Request(new URL(request.url, `http://${request.headers.host ?? "localhost"}`), {
           method: request.method,
           headers,
-          body: request.method === "GET" || request.body === undefined ? undefined : JSON.stringify(request.body),
+          body: request.method === "GET" || !request.body ? undefined : (request.body as string),
         }),
       );
 

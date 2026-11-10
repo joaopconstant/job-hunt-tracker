@@ -8,7 +8,7 @@ Built as a production-style full stack project: typed end to end, containerized,
 
 | Layer | Tech |
 | --- | --- |
-| Web | Next.js 16 (App Router, Server Actions, Cache Components), React 19, Tailwind CSS 4, shadcn/ui |
+| Web | Next.js 16 (App Router, Server Actions, Cache Components), React 19, Tailwind CSS 4, shadcn/ui, Recharts |
 | API | Node.js 22, Fastify 5, Zod 4 (validation + OpenAPI docs) |
 | Auth | Better Auth (email and password, database sessions) |
 | Data | PostgreSQL 17, Prisma 7 |
@@ -67,6 +67,6 @@ Every pull request runs lint, typecheck and unit tests, the integration tests ag
 - [x] Docker, tests and CI
 - [x] UI with shadcn/ui
 - [x] Authentication (email and password)
-- [ ] Dashboard with job hunt metrics
+- [x] Dashboard with job hunt metrics
 - [ ] AI: parse a job posting and match it against your résumé
 - [ ] Deploy to AWS

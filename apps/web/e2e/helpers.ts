@@ -10,6 +10,6 @@ export async function signUp(page: Page, name = "Ada Lovelace") {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("heading", { name: "Job Hunt Tracker" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Board" })).toBeVisible();
   return { email };
 }

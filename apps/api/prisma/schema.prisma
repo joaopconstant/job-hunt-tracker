@@ -1,0 +1,33 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+model Application {
+  id        String            @id @default(cuid())
+  company   String
+  role      String
+  url       String?
+  location  String?
+  status    ApplicationStatus @default(WISHLIST)
+  notes     String?
+  appliedAt DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([status])
+}

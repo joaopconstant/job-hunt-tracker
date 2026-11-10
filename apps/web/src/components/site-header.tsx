@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 const links = [
   { href: "/", label: "Board" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/resume", label: "Résumé" },
 ] as const;
 
 async function CurrentUser() {
@@ -13,7 +14,7 @@ async function CurrentUser() {
   return <UserMenu name={user.name} />;
 }
 
-export function SiteHeader({ current }: { current: (typeof links)[number]["href"] }) {
+export function SiteHeader({ current }: { current?: (typeof links)[number]["href"] }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-6">

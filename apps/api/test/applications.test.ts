@@ -1,14 +1,21 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { fakeAuthenticator } from "./fake-authenticator.js";
+import { KeywordMatchAnalyzer } from "../src/match/keyword-analyzer.js";
 import { InMemoryApplicationRepository } from "./in-memory-application-repository.js";
+import { InMemoryMatchRepository } from "./in-memory-match-repository.js";
 
 let repository: InMemoryApplicationRepository;
 let app: Awaited<ReturnType<typeof buildApp>>;
 
 beforeEach(async () => {
   repository = new InMemoryApplicationRepository();
-  app = await buildApp({ repository, authenticator: fakeAuthenticator });
+  app = await buildApp({
+    repository,
+    matches: new InMemoryMatchRepository(repository),
+    analyzer: new KeywordMatchAnalyzer(),
+    authenticator: fakeAuthenticator,
+  });
 });
 
 const as = (userId: string) => ({ "x-test-user": userId });

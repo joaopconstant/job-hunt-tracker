@@ -3,7 +3,9 @@ import { buildApp } from "../src/app.js";
 import { createAuth } from "../src/auth.js";
 import { betterAuthAuthenticator } from "../src/authenticator.js";
 import { createPrismaClient } from "../src/db.js";
+import { KeywordMatchAnalyzer } from "../src/match/keyword-analyzer.js";
 import { PrismaApplicationRepository } from "../src/repositories/prisma-application-repository.js";
+import { PrismaMatchRepository } from "../src/repositories/prisma-match-repository.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required for integration tests");
@@ -12,6 +14,8 @@ const origin = "http://localhost:3000";
 const prisma = createPrismaClient(databaseUrl);
 const app = await buildApp({
   repository: new PrismaApplicationRepository(prisma),
+  matches: new PrismaMatchRepository(prisma),
+  analyzer: new KeywordMatchAnalyzer(),
   authenticator: betterAuthAuthenticator(
     createAuth(prisma, { secret: "integration-test-secret-integration-test", baseURL: origin }),
   ),

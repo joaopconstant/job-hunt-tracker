@@ -9,26 +9,17 @@ import {
   listApplicationsQuery,
   updateApplicationSchema,
 } from "../schemas.js";
+import { requireUser } from "./require-user.js";
 import { computeStats, statsSchema, withAppliedAt } from "../stats.js";
 
-const errorSchema = z.object({ message: z.string() });
-
-declare module "fastify" {
-  interface FastifyRequest {
-    userId: string;
-  }
-}
+export const errorSchema = z.object({ message: z.string() });
 
 export const applicationRoutes: FastifyPluginAsyncZod<{
   repository: ApplicationRepository;
   authenticator: Authenticator;
 }> = async (app, { repository, authenticator }) => {
   app.decorateRequest("userId", "");
-  app.addHook("onRequest", async (request, reply) => {
-    const userId = await authenticator.getUserId(request.headers);
-    if (!userId) return reply.status(401).send({ message: "Unauthorized" });
-    request.userId = userId;
-  });
+  app.addHook("onRequest", requireUser(authenticator));
 
   app.get(
     "/applications",

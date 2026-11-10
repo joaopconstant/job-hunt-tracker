@@ -30,8 +30,32 @@ model Application {
   updatedAt DateTime          @updatedAt
   userId    String
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match     MatchAnalysis?
 
   @@index([userId, status])
+}
+
+/// The résumé a user compares job postings against. One per user.
+model Resume {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  updatedAt DateTime @updatedAt
+}
+
+/// The latest AI comparison between a job posting and the user's résumé.
+model MatchAnalysis {
+  id             String      @id @default(cuid())
+  applicationId  String      @unique
+  application    Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  jobDescription String
+  score          Int
+  summary        String
+  strengths      String[]
+  gaps           String[]
+  suggestions    String[]
+  analyzer       String
+  createdAt      DateTime    @default(now())
 }
 
 model User {
@@ -45,6 +69,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   applications  Application[]
+  resume        Resume?
 
   @@unique([email])
   @@map("user")
